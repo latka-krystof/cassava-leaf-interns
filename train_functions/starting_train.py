@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import constants
 
 def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
 
@@ -97,6 +98,12 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
             model.train()
 
             step += 1
+
+        print()
+
+        if constants.SAVE_INTERVAL and (epoch + 1) % constants.SAVE_INTERVAL:
+            print("Saving model...")
+            torch.save(model.state_dict(), constants.SAVE_DIR)
 
         print()
 
