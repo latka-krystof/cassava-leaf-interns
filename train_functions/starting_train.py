@@ -11,9 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-
-
-def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, summary_path):
+def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
 
     """
     Trains and evaluates a model.
@@ -24,9 +22,21 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, s
         model:           PyTorch model to be trained.
         hyperparameters: Dictionary containing hyperparameters.  (Only using Batch_size and epochs from this dictionary)
         n_eval:          Interval at which we evaluate our model.
-        summary_path:    Path where Tensorboard summaries are located.
     """
-
+    ##print ("====================================")
+    ##print ("Model")
+    ##print (model)
+    ##print ("Train Dataset Image ID")
+    ##print (train_dataset.image_id)
+    ##print ("Train Dataset Labels")
+    ##print (train_dataset.labels)
+    ##print ("Val Dataset Image ID")
+    ##print (val_dataset.image_id)
+    ##print ("Val Dataset Labels")
+    ##print (val_dataset.labels)
+    ##print ("Hyperparameters")
+    ##print (hyperparameters)
+    ##print ("====================================")
     # Get keyword arguments
     batch_size, epochs = hyperparameters["batch_size"], hyperparameters["epochs"]
 
@@ -50,25 +60,31 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, s
         print(f"Epoch {epoch + 1} of {epochs}")
 
         # Loop over each batch in the dataset
-        for i, batch in enumerate(train_loader):
-            print(f"\rIteration {i + 1} of {len(train_loader)} ...", end="")
-
-            input_data, label_data = batch
-           
+        for input_data, label_data in tqdm(train_loader):
+            print(f"\rIteration {step} of {len(train_loader)} ...", end="")
+            ##print("input_data:", input_data.size())
+            ##print(input_data)
+            ##print ("label_data:", label_data.size())
+            ##print(label_data)
+                       
             pred = model(input_data)
 
-            # Prediction, label data have same shape
-            loss = loss_fn(pred, label_data) 
+            ##print("Calculate loss and pred, Pred: ", pred)
+            ##print("Label Data: ", label_data)
+            ##print("Len pred ", len(pred))
+            ##print("Len label_data ", len(label_data))
+            loss = loss_fn(pred, label_data)
             pred = pred.argmax(axis=1)
 
+            #Back Propagate Loss
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
             print(f"\n    Train Loss: {loss.item()}")
 
-            # Periodically evaluate our model + log to Tensorboard
-            if (step + 1) % n_eval == 0:
+            # Periodically evaluate our model
+            if (step) % n_eval == 0:
                 # Compute training loss and accuracy.
                 train_accuracy = compute_accuracy(pred, label_data)
                 print(f"    Train Accu: {train_accuracy}")
@@ -81,13 +97,6 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, s
             model.train()
 
             step += 1
-
-        print()
-
-        # If we have a save interval and we are past it, save the model
-        if constants.SAVE_INTERVAL and (epoch + 1) % constants.SAVE_INTERVAL:
-            print("Saving model...")
-            torch.save(model.state_dict(), constants.SAVE_DIR)
 
         print()
 
@@ -119,16 +128,14 @@ def evaluate(val_loader, model, loss_fn):
 
     model.eval()
 
-    loss, correct, count = 0, 0, 0
+    total_loss, total_correct, total_count = 0, 0, 0
     with torch.no_grad(): 
-        for batch in val_loader:
-            input_data, label_data = batch
+        for input_data, label_data in tqdm(val_loader):
+            logits = model(input_data)
+            total_loss += loss_fn(logits, label_data).mean().item()
 
-            pred = model(input_data)
-            loss += loss_fn(pred, label_data).mean().item()
-
-            # Update both correct and count (use metrics for tensorboard)
-            correct += (torch.argmax(pred, dim=1) == label_data).sum().item()
-            count += len(label_data)
-
-    return loss, correct/count
+            # Update correct and count totals
+            total_correct += (torch.argmax(logits, dim=1) == label_data).sum().item()
+            total_count += len(label_data)
+    validation_accuracy = total_correct/total_count
+    return total_loss, validation_accuracy

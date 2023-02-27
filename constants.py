@@ -8,4 +8,3 @@ TEST_NUM = 4280
 
 CSV_PATH = './dataset/train.csv'
 IMG_PATH = './dataset/train_images/'
-
