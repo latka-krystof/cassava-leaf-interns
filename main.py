@@ -17,8 +17,8 @@ def main():
     print("Batch size:", constants.BATCH_SIZE)
 
     # Initalize dataset and model. Then train the model!
-    train_dataset = StartingDataset(constants.CSV_PATH)
-    val_dataset = StartingDataset(constants.CSV_PATH)
+    train_dataset = StartingDataset(constants.CSV_PATH, constants.IMG_PATH)
+    val_dataset = StartingDataset(constants.CSV_PATH, constants.IMG_PATH, training_set=False)
     model = StartingNetwork()
     starting_train(
         train_dataset=train_dataset,
