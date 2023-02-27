@@ -6,5 +6,5 @@ TYPES = 5
 TRAIN_NUM = 17118
 TEST_NUM = 4280
 
-CSV_PATH = './dataset/train.csv'
-IMG_PATH = './dataset/train_images/'
+CSV_PATH = '/kaggle/input/cassava-leaf-disease-classification/train.csv'
+IMG_PATH = '/kaggle/input/cassava-leaf-disease-classification/train_images/'
