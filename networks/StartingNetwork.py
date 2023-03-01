@@ -7,43 +7,45 @@ import torch.nn.functional as F
 import itertools
 
 class StartingNetwork(nn.Module):
-  # Input Shape is a tuple of size 3 ex: (1, 224, 224)
-  def __init__(self, input_shape=(1,224,224)):
-    # Call nn.Module's constructor--don't forget this
-    super().__init__()
+    def __init__(self):
+        super().__init__()
 
-    # Define layers
-    # For our very simple model, we just flatten the inputs into a 1D tensor
-    size = list(itertools.accumulate(input_shape, lambda x, y: x * y))[-1]
-    print(size)
+        # Initial Convolutional Layer (227 X 227) --> (55 X 55)
+        self.c1 = nn.Conv2d(in_channels=3, out_channels=3, kernel_size=11, stride=4, padding=1, bias=True)
 
-    self.flatten = nn.Flatten()
-    self.fc1 = nn.Linear(size, 256)
-    self.fc2 = nn.Linear(256, 128)
-    self.fc3 = nn.Linear(128, 10)
+        # Loading in ResNet-18 from PyTorch 
+        model = torch.hub.load('pytorch/vision:v0.8.0', 'resnet18', pretrained=True)
+        self.resnet = torch.nn.Sequential(*(list(model.children())[:-1]))
 
-  def forward(self, x):
-    # Forward propagation
-    x = self.flatten(x)
-    x = self.fc1(x)
-    x = F.relu(x)
-
-    x = self.fc2(x)
-    x = F.relu(x)
-
-    x = self.fc3(x)
-
-    # No activation function at the end
-    # nn.CrossEntropyLoss takes care of it for us
-
-    return x
+        # Used to reduce output of ResNet 
+        self.f1 = nn.Linear(512, 512)
+        self.f2 = nn.Linear(512, 256)
+        self.f3 = nn.Linear(256, 5)
 
 
+    def forward(self, x):
+        x = self.c1(x) # (3 X 227 X 227) --> (3 X 55 X 55)
+        nn.ReLU()
 
+        x = self.resnet(x) # (3 X 55 X 55) --> (512 X 1 X 1)
+        nn.ReLU()
+
+        x = torch.flatten(x, 1) # (512 X 1 X 1) --> (512)
+        x = self.f1(x)
+        nn.ReLU()
+
+        nn.Dropout(p=0.5, inplace=True) # (512) --> (512)
+
+        x = self.f2(x) # (512) --> (256)
+        x = self.f3(x) # (256) --> (5)
+        return x
+
+
+"""
 class ConvNet(torch.nn.Module):
-    """
+
     Basic logistic regression on 800x600x3 images.
-    """
+
 
     def __init__(self):
         super().__init__()
@@ -112,16 +114,13 @@ if (__name__ == "__main__"):
   torchsummary.summary(new_network, (3, 800, 600))
 
 
-"""
 Code from the colab notebook on CV:
 class ConvNet(nn.Module):
   def __init__(self):
     # Call nn.Module's constructor--don't forget this
     super().__init__()
 
-    \"""
     Define layers
-    \"""
     # Explanation of arguments
     # Remember a Convolution layer will take some input volume HxWxC
     # (H = height, W = width, and C = channels) and map it to some output
