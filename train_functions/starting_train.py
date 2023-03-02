@@ -93,12 +93,14 @@ def evaluate(val_loader, model, loss_fn):
     model.eval()
 
     total_loss, total_correct, total_count = 0, 0, 0
-    with torch.no_grad(): 
+    with torch.no_grad(): #grad comp. off
         for input_data, label_data in tqdm(val_loader):
             logits = model(input_data)
+            
             total_loss += loss_fn(logits, label_data).mean().item()
-
             total_correct += (torch.argmax(logits, dim=1) == label_data).sum().item()
             total_count += len(label_data)
+            
     validation_accuracy = total_correct/total_count
+    
     return total_loss, validation_accuracy
